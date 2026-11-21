@@ -1,0 +1,71 @@
+{
+  "name": "Hafta 1-ödev",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "04086078-f825-46ba-98dd-fa5ddbfa8a2e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "be4a3dec-de10-46be-be0f-7b0266990a58",
+              "name": "message",
+              "value": "Merhaba Tech Istanbul!",
+              "type": "string"
+            },
+            {
+              "id": "fee2f361-b833-4a14-9598-937f16e76fc3",
+              "name": "student",
+              "value": "Feride Güner",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "8cbe5952-3c1f-4201-8073-b1d2c2598a59",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fd10f7bc-4c65-4807-a2cc-65007fc1eac7",
+  "meta": {
+    "instanceId": "9243e3f6d0bd79abe0b8fcf89ce53e656c6e27d4c414d61f2a351218266e9a7d"
+  },
+  "nodeGroups": [],
+  "id": "XrMlNDsmJWSdXVC0",
+  "tags": []
+}
