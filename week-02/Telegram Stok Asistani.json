@@ -1,0 +1,547 @@
+{
+  "name": "Telegram Stok Asistani",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "759c8a84-ab5a-41d6-8aea-e001541190df",
+      "name": "Telegram Trigger",
+      "webhookId": "YOUR_WEBHOOK_ID",
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "53ddcbc5-3707-4eaf-a0c6-5390370e1ed7",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        224,
+        0
+      ],
+      "id": "52a9ee4f-3f62-4375-94d7-5fafe3eedf55",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const store = $getWorkflowStaticData('global');\nconst msg = $input.first().json.message;\nreturn [{\n  json: {\n    text: msg.text,\n    chat_id: msg.chat.id,\n    last_product: store.last_product || null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -96
+      ],
+      "id": "9fb2a3e1-1db7-4fb8-814a-7c39711b2c53",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-flash-lite-latest",
+          "mode": "list",
+          "cachedResultName": "Gemini Flash-Lite Latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Sen bir stok botunun niyet ayrıştırıcısın. Stok sayısı UYDURMA, sadece mesajı yorumla.\nYalnızca şu JSON'u döndür, başka hiçbir şey yazma:\n{\"items\":[{\"operation\":\"query|sale|add|set\",\"product\":\"...\",\"quantity\":0}],\"clarification\":null}\n\nKurallar:\n- \"ne kadar\", \"kaç kaldı\", \"kaç tane var\" → query (quantity null)\n- \"sattım\", \"satış oldu\", \"satıldı\" → sale\n- \"iade geldi\", \"yeni ürün geldi\", \"mal girişi\", \"geldi\" → add\n- \"stoğunu X yap\", \"X olarak güncelle\" → set\n- Ürün adı mesajda yoksa son ürünü kullan: {{ $json.last_product }}\n- Ürün adını tekil ve ilk harfi büyük yaz (Klavye, Mouse, Monitör). Bilinmeyen ürünü (örn. Hoparlör) aynen yaz.\n- Mesajda birden fazla hareket varsa items içine hepsini ayrı ayrı koy.\n- İşlem, ürün veya miktar belirsizse items boş olsun ve clarification alanına Türkçe kısa bir soru yaz.\n\nMesaj: {{ $json.text }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        -96
+      ],
+      "id": "2bcd1143-fd6f-4314-be22-efdecb661ccf",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const parts = $input.first().json.content.parts;\nconst raw = (parts.find(p => p.text) || {}).text || '';\nconst clean = raw.replace(/```json|```/g, '').trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(clean);\n} catch (e) {\n  parsed = { items: [], clarification: 'Mesajı anlayamadım, tekrar yazar mısınız?' };\n}\n\nconst ctx = $('Code in JavaScript').first().json;\nreturn [{\n  json: {\n    items: parsed.items || [],\n    clarification: parsed.clarification || null,\n    chat_id: ctx.chat_id,\n    source_text: ctx.text\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -96
+      ],
+      "id": "95ce7870-2d19-4651-a89f-15cc810f4d35",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Mini_ERP",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "products",
+          "cachedResultUrl": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1184,
+        -80
+      ],
+      "id": "0f853df4-9579-4ae9-8901-56b7493c82f1",
+      "name": "Get Products",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const norm = s => String(s || '').toLocaleLowerCase('tr')\n  .replace(/ö/g,'o').replace(/ü/g,'u').replace(/ş/g,'s')\n  .replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').trim();\n\nconst parsed = $('Code in JavaScript1').first().json;\nconst products = $input.all().map(i => i.json);\n\nconst stock = {};\nproducts.forEach(p => { stock[p.sku] = Number(p.stock); });\n\nconst find = name => {\n  const n = norm(name);\n  if (!n) return null;\n  return products.find(p => {\n    const pn = norm(p.product_name);\n    return n === pn || n.includes(pn) || pn.includes(n);\n  }) || null;\n};\n\nconst lines = [];\nconst moves = [];\nlet lastProduct = null;\n\nif (!parsed.items.length) {\n  lines.push(parsed.clarification || 'Hangi ürün ve hangi işlem? Biraz daha açık yazar mısınız?');\n}\n\nfor (const it of parsed.items) {\n  const op = it.operation;\n  if (!it.product) {\n    lines.push('Hangi ürünü kastettiğinizi anlayamadım. Ürün adını yazar mısınız?');\n    continue;\n  }\n  const p = find(it.product);\n  if (!p) {\n    lines.push(`\"${it.product}\" ürünü bulunamadı.`);\n    continue;\n  }\n  const before = stock[p.sku];\n  lastProduct = p.product_name;\n\n  if (op === 'query') {\n    lines.push(`${p.product_name} stoğu: ${before} adet.`);\n    continue;\n  }\n\n  const q = (it.quantity === null || it.quantity === undefined) ? NaN : Number(it.quantity);\n  const valid = ['sale','add','set'].includes(op) && Number.isInteger(q) && q >= 0 && (op === 'set' || q > 0);\n  if (!valid) {\n    lines.push(`${p.product_name} için işlem veya miktar belirsiz. Örnek: \"2 tane sattım\".`);\n    continue;\n  }\n\n  let after;\n  if (op === 'sale') {\n    if (q > before) {\n      lines.push(`Yetersiz stok: ${p.product_name} stoğu ${before}, ${q} adet satılamaz. İşlem reddedildi.`);\n      continue;\n    }\n    after = before - q;\n  } else if (op === 'add') {\n    after = before + q;\n  } else {\n    after = q;\n  }\n\n  stock[p.sku] = after;\n  moves.push({\n    operation: op,\n    sku: p.sku,\n    quantity: q,\n    before,\n    after,\n    status: 'success',\n    source_text: parsed.source_text,\n    row_number: p.row_number,\n    stock: after\n  });\n  lines.push(`${p.product_name}: ${before} → ${after}`);\n}\n\nif (lastProduct) {\n  const store = $getWorkflowStaticData('global');\n  store.last_product = lastProduct;\n}\n\nconst reply = lines.join('\\n');\nconst chat_id = parsed.chat_id;\n\nif (moves.length === 0) {\n  return [{ json: { skip: true, reply, chat_id } }];\n}\nreturn moves.map(m => ({ json: { skip: false, ...m, reply, chat_id } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        64
+      ],
+      "id": "efeb419a-1a11-4f0b-9b64-3f91f798b224",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Code in JavaScript2').first().json.chat_id }}",
+        "text": "={{ $('Code in JavaScript2').first().json.reply }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        304
+      ],
+      "id": "0e52c06e-2207-45cf-9f4f-c9617f4a495d",
+      "name": "Send a text message",
+      "webhookId": "YOUR_SEND_WEBHOOK_ID",
+      "executeOnce": true,
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "dbfd7a90-e7f7-402c-b16d-c0d45a563042",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1408,
+        64
+      ],
+      "id": "85ecc1c7-2f7b-4a25-abfb-a50cd8541b8a",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Mini_ERP",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 399786750,
+          "mode": "list",
+          "cachedResultName": "movements",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "operation": "={{ $json.operation }}",
+            "sku": "={{ $json.sku }}",
+            "quantity": "={{ $json.quantity }}",
+            "before": "={{ $json.before }}",
+            "after": "={{ $json.after }}",
+            "status": "={{ $json.status }}",
+            "source_text": "={{ $json.source_text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "operation",
+              "displayName": "operation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sku",
+              "displayName": "sku",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "quantity",
+              "displayName": "quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "before",
+              "displayName": "before",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "after",
+              "displayName": "after",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source_text",
+              "displayName": "source_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1584.612633096018,
+        -32
+      ],
+      "id": "8a8a2b07-efc5-4540-ac09-538153a494c2",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Mini_ERP",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "products",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sku": "={{ $('If1').item.json.sku }}",
+            "stock": "={{ $('If1').item.json.stock }}"
+          },
+          "matchingColumns": [
+            "sku"
+          ],
+          "schema": [
+            {
+              "id": "sku",
+              "displayName": "sku",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "product_name",
+              "displayName": "product_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "stock",
+              "displayName": "stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1718.3558396130836,
+        -32
+      ],
+      "id": "40dd933a-0eb9-4e59-94d2-596df5961924",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Get Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Products": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "29146092-7992-4dd3-aa54-d26df16030fc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "nodeGroups": [],
+  "id": "HPFXXE8rOdGLZKiL",
+  "tags": []
+}
