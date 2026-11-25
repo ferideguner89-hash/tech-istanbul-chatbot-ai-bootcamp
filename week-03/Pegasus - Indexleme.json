@@ -1,0 +1,252 @@
+{
+  "name": "Pegasus - Indexleme",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0341ce66-0386-47b2-a7ae-2547a999886e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://www.flypgs.com/bolbol/bolbol-harca",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "995481e2-812e-46fa-8e0e-784ee8af1ec7",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "sourceData": "binary",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "content",
+              "cssSelector": "body"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "82fabb35-f9d3-4c34-87f0-e5042ef667c8",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            "name",
+            :,
+            "x-goog-api-key",
+            "value",
+            :,
+            "YOUR_GEMINI_API_KEY"
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"models/gemini-embedding-001\",\n  content: {\n    parts: [\n      { text: $json.content }\n    ]\n  },\n  outputDimensionality: 768\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        912,
+        0
+      ],
+      "id": "e6b32c81-3a77-4b61-86b5-b5c84c3c0695",
+      "name": "Gemini Embedding 768 Test"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst embeddings = $input.all();\n\nconst chunks = $(\"Pegasus Metin Temizleme ve Chunk\").all();\n\nif (embeddings.length !== chunks.length) {\n  throw new Error(\"Chunk ve embedding sayıları eşleşmiyor.\");\n}\n\nreturn embeddings.map((item, index) => {\n  const values = item.json.embedding?.values;\n\n  if (!Array.isArray(values) || values.length !== 768) {\n    throw new Error(`Embedding ${index}: 768 boyut bulunamadı.`);\n  }\n\n  return {\n    json: {\n      content: chunks[index].json.content,\n      metadata: chunks[index].json.metadata,\n      embedding: `[${values.join(\",\")}]`\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        256
+      ],
+      "id": "51195185-6700-468a-833c-4fde8913be50",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all();\nconst results = [];\n\nconst chunkSize = 800;\nconst overlap = 100;\n\nfor (const item of items) {\n  let text = String(item.json.content || \"\");\n\n  text = text\n    .replace(/https?:\\/\\/[^\\s]+/g, \" \")\n    .replace(/\\/(?:assets|files)\\/[^\\s\\]]+/g, \" \")\n    .replace(/\\[[^\\]]*\\]/g, \" \")\n    .replace(/\\b(?:Türkçe|English|Español|Deutsch|Italiano|Русский|Français|العربية)\\b/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n\n  if (!text) continue;\n\n  const step = chunkSize - overlap;\n\n  for (let start = 0; start < text.length; start += step) {\n    const chunk = text.slice(start, start + chunkSize);\n\n    if (chunk.trim().length < 50) continue;\n\n    results.push({\n      json: {\n        content: chunk,\n        metadata: {\n          company: \"Pegasus Hava Yolları\",\n          source: \"Pegasus resmi web sitesi\",\n          chunk_index: results.length\n        }\n      }\n    });\n\n    if (start + chunkSize >= text.length) break;\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "id": "9c5655b1-8ea7-4304-9827-ad5f53b92aa3",
+      "name": "Pegasus Metin Temizleme ve Chunk"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_SUPABASE_PROJECT_REF.supabase.co/rest/v1/documents",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            },
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{{ JSON.stringify({\n  content: $json.content,\n  metadata: $json.metadata,\n  embedding: $json.embedding\n}) }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        256
+      ],
+      "id": "e20a63ad-0dcd-47f2-939d-dfcb6dbdf1ac",
+      "name": "Supabase Insert Documents",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nvzWHoUQWVVJzmwr",
+          "name": "Header Auth account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Pegasus Metin Temizleme ve Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Embedding 768 Test": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pegasus Metin Temizleme ve Chunk": {
+      "main": [
+        [
+          {
+            "node": "Gemini Embedding 768 Test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Supabase Insert Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7573b2c1-733a-43ec-997b-6f15154d286a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe778e66c02cb3f49c793d5dc12291fc1fb35d4e107d8ec6ee93bb94b0b90b2b"
+  },
+  "nodeGroups": [],
+  "id": "X9LWy7BnBQUyqzMA",
+  "tags": []
+}

@@ -1,0 +1,221 @@
+{
+  "name": "Pegasus RAG Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "fed557ae-0213-4b3d-9027-c9e7b2ffbf23",
+      "name": "When chat message received",
+      "webhookId": "YOUR_WEBHOOK_ID"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{{ JSON.stringify({\n  model: \"models/gemini-embedding-001\",\n  content: {\n    parts: [\n      {\n        text: $(\"When chat message received\").first().json.chatInput\n      }\n    ]\n  },\n  outputDimensionality: 768\n}) }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        240,
+        -48
+      ],
+      "id": "bbdc8e47-1e9c-433a-ace3-f46f33677510",
+      "name": "Gemini Question Embedding",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nvzWHoUQWVVJzmwr",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_SUPABASE_PROJECT_REF.supabase.co/rest/v1/rpc/match_documents",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{{ JSON.stringify({\n  query_embedding: $json.embedding.values,\n  match_count: 10\n}) }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        432,
+        -64
+      ],
+      "id": "f19ec180-c355-4aa1-99d7-c3ccd5ef9d85",
+      "name": "Supabase Search",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "7ym5zUVkuw35eX90",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=\n{{ JSON.stringify({\n  contents: [\n    {\n      role: \"user\",\n      parts: [\n        {\n          text: [\n            \"Sen Pegasus Hava Yolları hakkında soruları yanıtlayan bir RAG asistanısın.\",\n            \"Yalnızca aşağıdaki kaynak metinlerden yararlan.\",\n            \"Kaynaklarda cevap yoksa 'Bu bilgi mevcut kaynaklarda bulunmuyor.' yaz.\",\n            \"Bilgi uydurma. Türkçe cevap ver.\",\n            \"\",\n            \"KULLANICI SORUSU:\",\n            $(\"When chat message received\").first().json.chatInput,\n            \"\",\n            \"KAYNAKLAR:\",\n            ...$(\"Supabase Search\").all().map((item, i) =>\n              \"Kaynak \" + (i + 1) + \":\\n\" +\n              item.json.content + \"\\n\" +\n              \"Kaynak bilgisi: \" + JSON.stringify(item.json.metadata)\n            ),\n            \"\",\n            \"Cevabının sonunda kullandığın kaynakları belirt.\"\n          ].join(\"\\n\\n\")\n        }\n      ]\n    }\n  ]\n}) }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        656,
+        -64
+      ],
+      "id": "06b13387-6336-4704-8d69-003e44d94411",
+      "name": "Gemini Chat Answer",
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nvzWHoUQWVVJzmwr",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "10446630-1790-4ea5-968c-62f3b109e06b",
+              "name": "text",
+              "value": "=\n{{ $json.candidates[0].content.parts[0].text }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        880,
+        -64
+      ],
+      "id": "7f452ff3-8297-41b2-9be3-501a62ec79e3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        -64
+      ],
+      "id": "9d6b3331-0387-44ce-a656-3c069b8796e9",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Gemini Question Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Question Embedding": {
+      "main": [
+        [
+          {
+            "node": "Supabase Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Search": {
+      "main": [
+        [
+          {
+            "node": "Gemini Chat Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Chat Answer": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4021497d-2de8-4dc5-980e-a48f82e721e7",
+  "meta": {
+    "instanceId": "fe778e66c02cb3f49c793d5dc12291fc1fb35d4e107d8ec6ee93bb94b0b90b2b"
+  },
+  "nodeGroups": [],
+  "id": "s2geWoh0xayVgjSN",
+  "tags": []
+}
