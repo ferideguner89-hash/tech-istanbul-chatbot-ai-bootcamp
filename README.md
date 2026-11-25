@@ -14,4 +14,14 @@
 - **Kullanılan Sistem:** Telegram Bot → n8n + LLM → Google Sheets → Telegram yanıtı
 - **Desteklenen İşlemler:** Stok sorgulama, satış düşme, iade/mal girişi ekleme, doğrudan stok güncelleme, konuşma bağlamından son ürünü hatırlama ve belirsiz mesajlarda açıklama isteme
 - **İş Akışı:** `week-02/workflow.json` (Telegram Trigger → If → Code → Gemini → Google Sheets → Telegram)
-- **Ek Dosyalar:** `week-02/screenshots/` 
+- **Ek Dosyalar:** `week-02/screenshots/`
+- 
+3. hafta kapsamında Pegasus Hava Yolları'nın kamuya açık kaynaklarını kullanarak n8n üzerinde indeksleme ve RAG (Retrieval-Augmented Generation) destekli sohbet iş akışlarını oluşturdum.
+
+## 3. Hafta Bilgileri
+
+* **Seçilen Şirket:** Pegasus Hava Yolları
+* **Kaynaklar:** Pegasus BolBol Harca sayfası (`flypgs.com/bolbol/bolbol-harca`) ve Pegasus Uçuş Paketleri sayfası (`flypgs.com/seyahat-hizmetlerimiz/ucus-ile-ilgili-hizmetlerimiz/ucus-paketleri`)
+* **Kullanılan Sistem:** n8n + Gemini Embedding (`gemini-embedding-001`, 768 boyut) + Supabase (`pgvector` / `match_documents`) + Gemini Chat LLM + n8n Chat Trigger
+* **RAG Ayarları:** Chunk Size: `800` karakter, Chunk Overlap: `100` karakter, Top-K (`match_count`): `10`
+* **İş Akışları:** `week-03/Pegasus - Indexleme.json`, `week-03/Pegasus RAG - İkinci Kaynak.json`, `week-03/Pegasus RAG Chatbot.json`
