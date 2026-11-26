@@ -1,0 +1,534 @@
+{
+  "name": "Odev04 - Arastirma",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "71c3fb97-24e7-4774-a6d4-e3decd9d4f96",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bc920f28-e055-4fb8-bda6-8829a7751986",
+              "name": "bolge",
+              "value": "Levent,İstanbul",
+              "type": "string"
+            },
+            {
+              "id": "26f8d466-64ce-47a4-8d31-0c04aa56ad5c",
+              "name": "isletme_turu",
+              "value": "pizzacı",
+              "type": "string"
+            },
+            {
+              "id": "955af4ad-5d3a-40e8-8a70-b0c83327cb1d",
+              "name": "arama_sorgusu",
+              "value": "pizzacı Levent İstanbul",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "30ca2d9d-07e1-4a2f-9899-cc06128f9c08",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "nwua9Gu5YrADL7ZDj",
+          "mode": "id"
+        },
+        "customBody": "{\n  \"searchStringsArray\": [\"pizzacı\", \"pizza restaurant\", \"pizzeria\"],\n  \"locationQuery\": \"Levent, İstanbul, Türkiye\",\n  \"maxCrawledPlacesPerSearch\": 10,\n  \"language\": \"tr\",\n  \"skipClosedPlaces\": true\n}",
+        "timeout": {},
+        "maxTotalChargeUsd": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "ca8ffbaa-94f1-4cb6-9cd2-acb3589b90e3",
+      "name": "Run an Actor and get dataset",
+      "credentials": {
+        "apifyApi": {
+          "id": "6E8z0WpH8mIr72DU",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "title",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        176,
+        208
+      ],
+      "id": "8c5f1acb-f699-4e4a-b38b-8a2ddaaf0161",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "query": "={{ $json.title }} Levent İstanbul resmi site franchise zincir şube",
+        "options": {
+          "include_answer": "basic",
+          "max_results": 3,
+          "search_depth": "basic"
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 2.1,
+      "position": [
+        400,
+        208
+      ],
+      "id": "e5b65cbc-f96f-4f7f-9663-51eb59c05e9c",
+      "name": "Search the web",
+      "credentials": {
+        "tavilyApi": {
+          "id": "U56FcqMDWirSPgGa",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "45a298cc-efe1-4ae6-bb6a-46fbb8aac077",
+              "name": "=title",
+              "value": "={{ $('Remove Duplicates').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "e1d80b73-a08b-4efe-bd02-ddfcbbd03f72",
+              "name": "=categoryName",
+              "value": "={{ $('Remove Duplicates').item.json.categoryName }}",
+              "type": "string"
+            },
+            {
+              "id": "220715c0-9b8d-414b-bd55-95a980e8baa6",
+              "name": "address",
+              "value": "={{ $('Remove Duplicates').item.json.address }}",
+              "type": "string"
+            },
+            {
+              "id": "0f671fe2-8c23-42a1-adf8-bce5710f0be3",
+              "name": "=website",
+              "value": "={{ $('Remove Duplicates').item.json.website }}",
+              "type": "string"
+            },
+            {
+              "id": "c63870cd-89ce-4a6d-ab96-16bbe57efa62",
+              "name": "maps_url",
+              "value": "={{ $('Remove Duplicates').item.json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "36da6bfb-9a93-4088-92ea-833f97f12ded",
+              "name": "tavily_answer\t",
+              "value": "={{ $json.answer }}",
+              "type": "string"
+            },
+            {
+              "id": "42a33363-7c8b-4ed2-920c-7ceb235cdeba",
+              "name": "=kaynaklar",
+              "value": "={{ $json.results.map(r => r.url + ' | ' + r.content.slice(0, 300)).join('\\n') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        624,
+        208
+      ],
+      "id": "d5201aeb-8c6a-4c6f-9892-5269427da486",
+      "name": "birleştir"
+    },
+    {
+      "parameters": {
+        "jsCode": "const zincirIpuclari = ['franchise', 'franchising', 'branches', 'stores', 'chain', 'zincir', 'bayi', 'outlets', 'şubesi', 'şube sayısı', 'locations'];\nconst bilinenZincirler = [\"papa john\", \"domino\", \"pizza hut\", \"little caesars\", \"terra pizza\", \"pizza llc\", \"sbarro\", \"pizza pizza\", \"pizza lazza\", \"pizzabulls\", \"pizza locale\"];\n\nconst out = [];\nfor (const it of $input.all()) {\n  const j = it.json;\n  const metin = ((j.tavily_answer || '') + ' ' + (j.kaynaklar || '')).toLowerCase();\n  const ad = (j.title || '').toLowerCase();\n\n  const pizzaMi = /pizza|pizzac|pizzeria/i.test(j.categoryName || '');\n  const zincirMi = bilinenZincirler.some(z => ad.includes(z)) || zincirIpuclari.some(z => metin.includes(z));\n\n  const urlMatch = (j.kaynaklar || '').match(/https?:\\/\\/[^\\s|]+/);\n  const kaynak = j.website || (urlMatch ? urlMatch[0] : '');\n\n  let karar, not;\n  if (!pizzaMi) { karar = 'uygun_degil'; not = 'Kategori pizzacı değil: ' + j.categoryName; }\n  else if (zincirMi) { karar = 'zincir'; not = 'Kaynaklarda zincir/franchise/çok şube ifadesi var.'; }\n  else { karar = 'bagimsiz_adayi'; not = 'Kaynaklarda zincir ifadesi bulunmadı; resmî site/kaynak elle teyit edilmeli.'; }\n\n  out.push({ json: {\n    firma_adi: j.title,\n    bolge: 'Levent, İstanbul',\n    resmi_site: j.website || '',\n    kategori: j.categoryName,\n    adres: j.address,\n   kisa_ozet: (j.tavily_answer || j.kaynaklar || '').slice(0, 300),\n    kaynak_url: kaynak,\n    karar,\n    bagimsizlik_notu: not\n  }});\n}\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        448
+      ],
+      "id": "64411ed4-2a17-44db-8073-bf163254e701",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "a803da83-910d-498c-9091-1a5b83b71307",
+              "leftValue": "={{ $json.karar }}",
+              "rightValue": "bagimsiz_adayi",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.4,
+      "position": [
+        576,
+        448
+      ],
+      "id": "a2910a48-d665-4844-b372-81750b5409de",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "maxItems": 3
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        800,
+        448
+      ],
+      "id": "1311b595-326e-427e-a83b-e77e7aa646fe",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Musteri Havuzu",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQjPihgmhZL_U68lp7h9na7DxxxH9xk6iZQogH08qgw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sayfa1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FQjPihgmhZL_U68lp7h9na7DxxxH9xk6iZQogH08qgw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "firma_adi": "={{ $json.firma_adi }}",
+            "bolge": "={{ $json.bolge }}",
+            "resmi_site": "={{ $json.resmi_site }}",
+            "kisa_ozet": "={{ $json.kisa_ozet }}",
+            "kaynak_url": "={{ $json.kaynak_url }}",
+            "bagimsizlik_notu": "={{ $json.bagimsizlik_notu }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "firma_adi",
+              "displayName": "firma_adi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "bolge",
+              "displayName": "bolge",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resmi_site",
+              "displayName": "resmi_site",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "kisa_ozet",
+              "displayName": "kisa_ozet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "kaynak_url",
+              "displayName": "kaynak_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "bagimsizlik_notu",
+              "displayName": "bagimsizlik_notu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        960,
+        448
+      ],
+      "id": "180398db-e2b2-4e95-b2b4-12cb3561079e",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Y9GIaq7LyfUA2YUa",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        448
+      ],
+      "id": "93b5ccab-3818-473e-a95c-81dd0bbc0614",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "dNlnUOlzlTtdy6AN",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        672
+      ],
+      "id": "dcf5b849-4a66-488d-a7cb-e132a2098551",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "qxY3vnoFVJCof3Bd",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        672
+      ],
+      "id": "87051a90-28dc-4ad8-8db3-28d48b8ff14d",
+      "name": "Default Data Loader"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor and get dataset": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Search the web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search the web": {
+      "main": [
+        [
+          {
+            "node": "birleştir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "birleştir": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e7bb16a4-79b0-47ef-95a5-a132a315ac71",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9243e3f6d0bd79abe0b8fcf89ce53e656c6e27d4c414d61f2a351218266e9a7d"
+  },
+  "nodeGroups": [],
+  "id": "ToHaPIvQ5JEk6dnz",
+  "tags": []
+}
