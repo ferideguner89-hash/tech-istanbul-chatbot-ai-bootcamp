@@ -25,3 +25,15 @@
 * **Kullanılan Sistem:** n8n + Gemini Embedding (`gemini-embedding-001`, 768 boyut) + Supabase (`pgvector` / `match_documents`) + Gemini Chat LLM + n8n Chat Trigger
 * **RAG Ayarları:** Chunk Size: `800` karakter, Chunk Overlap: `100` karakter, Top-K (`match_count`): `10`
 * **İş Akışları:** `week-03/Pegasus - Indexleme.json`, `week-03/Pegasus RAG - İkinci Kaynak.json`, `week-03/Pegasus RAG Chatbot.json`
+
+* 4. Hafta kapsamında n8n üzerinde Apify ve web araması ile bölgesel bağımsız işletme keşfi yapan, doğrulanan kayıtları Google Sheets müşteri havuzuna ve Supabase (`pgvector`) bilgi tabanına kaydeden araştırma akışı ile bu veritabanı üzerinden yanıt üreten RAG sohbet iş akışlarını oluşturuldu.
+
+## 4. Hafta Bilgileri
+
+* **Test Senaryosu:** `Levent, İstanbul` bölgesinde zincir veya franchise olmayan en fazla `3` bağımsız `pizzacı` işletmesinin bulunması ve doğrulanması
+* **Kullanılan Sistem:** Apify Google Maps Scraper → Tavily Web Search → JavaScript Doğrulama ve Filtreleme → Google Sheets (`Musteri Havuzu`) + Supabase (`pgvector` / `documents`) + Gemini Embedding & Chat Model + n8n Chat Trigger
+* **İş Akışları:**
+  * Araştırma ve Kayıt Akışı: `week-04/Odev04 - Arastirma.json` (Manual Trigger → Edit Fields → Apify Actor → Remove Duplicates → Tavily Search → Set / Birleştir → Code in JavaScript → Filter → Limit (3) → Google Sheets Append → Supabase Vector Store)
+  * Sohbet / RAG Akışı: `week-04/Sohbet _ RAG Akışı.json` (Chat Trigger → AI Agent → Google Gemini Chat Model + Supabase Vector Store Tool + Embeddings Google Gemini)
+* **Test Sorusu:** `"Levent'te müşteri havuzuna eklenen bağımsız pizzacılar hangileri? Her biri hakkında bir doğrulanmış bilgi ve kaynak bağlantısı ver."`
+
